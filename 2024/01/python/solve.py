@@ -1,4 +1,5 @@
 import argparse
+import collections
 
 
 def _parse_file(filename: str) -> tuple[list[int], list[int]]:
@@ -20,6 +21,11 @@ def _calculate_distance(locations_1: list[int], locations_2: list[int]) -> int:
     return sum(abs(l1 - l2) for l1, l2 in pairs)
 
 
+def _calculate_similarity(locations_1: list[int], locations_2: list[int]) -> int:
+    counter = collections.Counter(locations_2)
+    return sum(l1 * counter[l1] for l1 in locations_1)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filename')
@@ -27,4 +33,7 @@ if __name__ == '__main__':
 
     locations_1, locations_2 = _parse_file(args.filename)
     distance = _calculate_distance(locations_1, locations_2)
-    print(distance)
+    print(f'Total distance: {distance}')
+
+    similarity = _calculate_similarity(locations_1, locations_2)
+    print(f'Total similarity: {similarity}')
