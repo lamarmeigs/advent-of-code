@@ -9,8 +9,15 @@ def _parse_file(filename: str) -> list[list[int]]:
 
 
 def _extract_instructions(memory: str) -> list[re.Match]:
+    condensed_memory = ''
+    do = True
+    while memory:
+        scoped, _, memory = memory.partition("don't()" if do else 'do()')
+        if do:
+            condensed_memory += scoped
+        do = not do
     pattern = r'mul\(\d{1,3},\d{1,3}\)'
-    instructions = re.findall(pattern, memory)
+    instructions = re.findall(pattern, condensed_memory)
     return instructions
 
 
