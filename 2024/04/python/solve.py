@@ -55,11 +55,62 @@ class WordBlock:
         for row in range(self.height):
             for column in range(self.width):
                 for direction in Direction:
-                    if self._find_match(row, column, direction, match='XMAS'):
+                    if self._find_match(
+                        row,
+                        column,
+                        direction,
+                        match='XMAS',
+                        mark_letters=True,
+                    ):
                         matches += 1
         return matches
 
-    def _find_match(self, row: int, column: int, direction: Direction, match: str) -> bool:
+    def find_xs(self, word: str) -> str:
+        center_index = int((len(word) - 1) / 2)
+        half_1 = word[center_index::-1]
+        half_2 = word[center_index:]
+
+        matches = 0
+        for row in range(self.height):
+            for column in range(self.width):
+                slant_1 = (
+                    (
+                        self._find_match(row, column, Direction.LEFT_UP, half_1)
+                        and self._find_match(row, column, Direction.RIGHT_DOWN, half_2)
+                    )
+                    or (
+                        self._find_match(row, column, Direction.RIGHT_DOWN, half_1)
+                        and self._find_match(row, column, Direction.LEFT_UP, half_2)
+                    )
+                )
+                slant_2 = (
+                    (
+                        self._find_match(row, column, Direction.LEFT_DOWN, half_1)
+                        and self._find_match(row, column, Direction.RIGHT_UP, half_2)
+                    )
+                    or (
+                        self._find_match(row, column, Direction.RIGHT_UP, half_1)
+                        and self._find_match(row, column, Direction.LEFT_DOWN, half_2)
+                    )
+                )
+                if slant_1 and slant_2:
+                    matches += 1
+                    self[row][column].in_word = True
+                    self[row-1][column-1].in_word = True
+                    self[row-1][column+1].in_word = True
+                    self[row+1][column-1].in_word = True
+                    self[row+1][column+1].in_word = True
+
+        return matches
+
+    def _find_match(
+        self,
+        row: int,
+        column: int,
+        direction: Direction,
+        match: str,
+        mark_letters: bool = False,
+    ) -> bool:
         if (
             row < 0
             or row >= self.height
@@ -72,7 +123,8 @@ class WordBlock:
             return False
 
         if len(match) == 1:
-            letter.in_word = True
+            if mark_letters:
+                letter.in_word = True
             return True
 
         match direction:
@@ -101,7 +153,13 @@ class WordBlock:
                 next_row = row + 1
                 next_column = column + 1
 
-        if self._find_match(next_row, next_column, direction, match[1:]):
+        if self._find_match(
+            next_row,
+            next_column,
+            direction,
+            match[1:],
+            mark_letters=mark_letters,
+        ):
             letter.in_word = True
             return True
 
@@ -123,3 +181,7 @@ if __name__ == '__main__':
     block = WordBlock(raw_word_block)
     word_count = block.find_matches('XMAS')
     print(f'XMAS #: {word_count}')
+
+    block = WordBlock(raw_word_block)
+    word_count = block.find_xs('MAS')
+    print(f'X-MAS #: {word_count}')
