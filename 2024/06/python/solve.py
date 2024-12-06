@@ -28,10 +28,29 @@ class Position:
     column: int
     visited_directions: set[Direction] = dataclasses.field(default_factory=set)
     obstructed: bool = False
+    test: bool = False
 
     @property
     def visited(self):
         return bool(self.visited_directions)
+
+    def __str__(self):
+        if (
+            self.visited_directions.intersection(Direction.verticals())
+            and self.visited_directions.intersection(Direction.horizontals())
+        ):
+            c = '+'
+        elif self.visited_directions.intersection(Direction.verticals()):
+            c = '|'
+        elif self.visited_directions.intersection(Direction.horizontals()):
+            c = '-'
+        elif self.obstructed and self.test:
+            c = 'O'
+        elif self.obstructed:
+            c = '#'
+        else:
+            c = '.'
+        return c
 
 
 @dataclasses.dataclass
@@ -71,9 +90,10 @@ class Map:
     def __init__(self, raw_grid: str):
         self.grid = []
         self.guard = None
-        self.reset_map(raw_grid)
+        self.reset(raw_grid)
 
-    def reset_map(self, raw_grid: str):
+    def reset(self, raw_grid: str):
+        self.grid = []
         for row_index, raw_row in enumerate(raw_grid.split()):
             row = []
             for column_index, raw_position in enumerate(raw_row):
@@ -107,28 +127,17 @@ class Map:
     def __str__(self):
         rendered_rows = []
         for row in self.grid:
-            rendered_row = []
-            for position in row:
-                if (
-                    position.visited_directions.intersection(Direction.verticals())
-                    and position.visited_directions.intersection(Direction.horizontals())
-                ):
-                    c = '+'
-                elif position.visited_directions.intersection(Direction.verticals()):
-                    c = '|'
-                elif position.visited_directions.intersection(Direction.horizontals()):
-                    c = '-'
-                elif position.obstructed:
-                    c = '#'
-                else:
-                    c = '.'
-                rendered_row.append(c)
+            rendered_row = [str(position) for position in row]
             rendered_rows.append(rendered_row)
 
         if self.guard:
             rendered_rows[self.guard.row][self.guard.column] = str(self.guard)
 
         return '\n'.join(''.join(row) for row in rendered_rows)
+
+    def play(self):
+        while self.step():
+            pass
 
     def step(self) -> bool:
         if not self.guard:
@@ -188,13 +197,12 @@ def _parse_file(filename: str) -> str:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filename')
+    parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
 
     raw_map = _parse_file(args.filename)
     map_ = Map(raw_map)
-
-    while changed := map_.step():
-        pass
+    map_.play()
 
     visited_positions = len(
         [
@@ -206,17 +214,26 @@ if __name__ == '__main__':
     )
     print(f'Number of visited positions: {visited_positions}')
 
-    # map_.reset_map(raw_map)
-    # obstructions_causing_loops = []
-    # changed = True
-    # while changed:
-    #     trial_map = copy.deepcopy(map_)
-    #     next_position = trial_map.get_guard_next_position()
-    #     next_position.obstructed = True
-    #     try:
-    #         while changed := trial_map.step():
-    #             pass
-    #     except LoopError:
-    #         obstructions_causing_loops.append(next_position)
-    #     changed = map_.step()
-    # print(f'Number of potential loop-causing obstructions: {len(obstructions_causing_loops)}')
+    map_.reset(raw_map)
+    obstructions_causing_loops = []
+    changed = True
+    step = 0
+    while changed:
+        if args.verbose:
+            print(f"Step {step}/{visited_positions-1}")
+        trial_map = copy.deepcopy(map_)
+
+        if not (next_position := trial_map.get_guard_next_position()):
+            break
+        elif not (next_position.obstructed or next_position.visited):
+            next_position.obstructed = True
+            next_position.test = True
+            try:
+                trial_map.play()
+            except LoopError:
+                obstructions_causing_loops.append(next_position)
+
+        changed = map_.step()
+        step += 1
+
+    print(f'Number of potential loop-causing obstructions: {len(obstructions_causing_loops)}')
