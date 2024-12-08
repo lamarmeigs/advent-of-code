@@ -4,11 +4,12 @@ import itertools
 
 
 class Map:
-    def __init__(self, raw_grid: str):
+    def __init__(self, raw_grid: str, has_harmonics: bool = False):
         self.width = 0
         self.height = 0
         self.antennas = collections.defaultdict(list)
         self.antinodes = collections.defaultdict(list)
+        self.has_harmonics = has_harmonics
         self._detect_antennas(raw_grid)
         self._infer_antinodes()
 
@@ -21,24 +22,37 @@ class Map:
                     self.antennas[frequency].append((row_index, column_index))
 
     def _infer_antinodes(self):
+        def _add_vector(
+            coordinates: tuple[int, ...],
+            vector: tuple[int, ...]
+        ) -> tuple[int, ...]:
+            return tuple(sum(_) for _ in zip(coordinates, vector))
+
+        def _in_map(coordinates: tuple[int, ...]) -> bool:
+            return (
+                0 <= coordinates[0] < self.width
+                and 0 <= coordinates[1] < self.height
+            )
+
         for frequency, antennas in self.antennas.items():
             for a1, a2 in itertools.combinations(antennas, 2):
                 row_diff = a1[0] - a2[0]
                 column_diff = a1[1] - a2[1]
 
-                antinode_1 = (a1[0] + row_diff, a1[1] + column_diff)
-                antinode_2 = (a2[0] - row_diff, a2[1] - column_diff)
+                a1_vector = (row_diff, column_diff)
+                a2_vector = (-row_diff, -column_diff)
 
-                if (
-                    0 <= antinode_1[0] < self.width
-                    and 0 <= antinode_1[1] < self.height
-                ):
-                    self.antinodes[frequency].append(antinode_1)
-                if (
-                    0 <= antinode_2[0] < self.width
-                    and 0 <= antinode_2[1] < self.height
-                ):
-                    self.antinodes[frequency].append(antinode_2)
+                if self.has_harmonics:
+                    for start_node, vector in [(a1, a1_vector), (a2, a2_vector)]:
+                        antinode = start_node
+                        while _in_map(antinode):
+                            self.antinodes[frequency].append(antinode)
+                            antinode = _add_vector(antinode, vector)
+                else:
+                    if _in_map(antinode_1 := _add_vector(a1, a1_vector)):
+                        self.antinodes[frequency].append(antinode_1)
+                    if _in_map(antinode_2 := _add_vector(a2, a2_vector)):
+                        self.antinodes[frequency].append(antinode_2)
 
     def __str__(self):
         rendered_rows = []
@@ -70,5 +84,9 @@ if __name__ == '__main__':
 
     raw_map = _parse_file(args.filename)
     map_ = Map(raw_map)
+    antinodes = itertools.chain(*map_.antinodes.values())
+    print(f'Antinode #: {len(set(antinodes))}')
+
+    map_ = Map(raw_map, has_harmonics=True)
     antinodes = itertools.chain(*map_.antinodes.values())
     print(f'Antinode #: {len(set(antinodes))}')
