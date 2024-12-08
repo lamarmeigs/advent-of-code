@@ -58,8 +58,14 @@ def _interleave(iter_1: typing.Iterable, iter_2: typing.Iterable) -> typing.Iter
 
 def _evaluates(equation: list[str], result: int) -> bool:
     total = int(equation[0])
-    for operation in itertools.batched(equation[1:], 2):
-        total = eval(str(total) + ' '.join(operation))
+    for operator, operand in itertools.batched(equation[1:], 2):
+        match operator:
+            case '+':
+                total += int(operand)
+            case '*':
+                total *= int(operand)
+            case '||':
+                total = int(str(total) + operand)
     return total == result
 
 
@@ -70,4 +76,11 @@ if __name__ == '__main__':
 
     equations = _parse_file(args.filename)
     valid_equations = _validate_equations(equations, operators=('+', '*'))
-    print(f'Sum of test values with valid equations: {sum(valid_equations.keys())}')
+    print(
+        f'Sum of test values with valid equations (using +, *): {sum(valid_equations.keys())}'
+    )
+
+    valid_equations = _validate_equations(equations, operators=('+', '*', '||'))
+    print(
+        f'Sum of test values with valid equations (using +, *, ||): {sum(valid_equations.keys())}'
+    )
