@@ -38,6 +38,45 @@ def _compact(disk_map: list[int|str]):
             disk_map[i] = '.'
 
 
+def _compact_nofrag(disk_map: list[int|str]):
+    def _file_block_ranges(disk_map: list[int|str]) -> typing.Iterator[tuple[int,int]]:
+        file_id = disk_map[-1]
+        end_block = len(disk_map) - 1
+        start_block = end_block
+        while start_block >= 0:
+            if (
+                disk_map[start_block - 1] != file_id
+                or start_block == 0
+            ):
+                yield (start_block, end_block)
+                end_block = start_block - 1
+                while disk_map[end_block] == '.':
+                    end_block -= 1
+                file_id = disk_map[end_block]
+                start_block = end_block + 1
+            start_block -= 1
+
+    def _find_empty_space(size: int) -> tuple[int, int] | None:
+        start_block = disk_map.index('.')
+        end_block = start_block
+        while end_block < len(disk_map):
+            if disk_map[end_block] != '.':
+                start_block = disk_map[end_block:].index('.') + end_block
+                end_block = start_block
+            elif end_block - start_block + 1 == size:
+                return (start_block, end_block)
+            else:
+                end_block += 1
+        return None
+
+    for file_start_block, file_end_block in _file_block_ranges(disk_map):
+        size = file_end_block - file_start_block + 1
+        empty_blocks = _find_empty_space(size)
+        if empty_blocks and empty_blocks[1] < file_start_block:
+            disk_map[empty_blocks[0]:empty_blocks[1]+1] = disk_map[file_start_block:file_end_block+1]
+            disk_map[file_start_block:file_end_block+1] = ['.'] * size
+
+
 def _get_checksum(disk_map: list[str|int]) -> int:
     return sum(
         position * file_id
@@ -56,3 +95,8 @@ if __name__ == '__main__':
     _compact(disk_map)
     checksum = _get_checksum(disk_map)
     print(f'Compacted checksum: {checksum}')
+
+    disk_map = _expand_map(dense_disk_map)
+    _compact_nofrag(disk_map)
+    checksum = _get_checksum(disk_map)
+    print(f'Compacted, unfragmented checksum: {checksum}')
