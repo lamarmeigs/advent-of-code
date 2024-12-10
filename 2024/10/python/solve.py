@@ -95,9 +95,16 @@ if __name__ == '__main__':
     map_ = Map(raw)
 
     reachable_peaks = collections.defaultdict(set)
-    for trail in map_.find_trails():
+    trails = map_.find_trails()
+    for trail in trails:
         trailhead = trail[0]
         peak = trail[-1]
         reachable_peaks[trailhead].add(peak)
     scores = {trailhead: len(peaks) for trailhead, peaks in reachable_peaks.items()}
     print(f'Sum of all trailhead scores: {sum(scores.values())}')
+
+    ratings = collections.defaultdict(int)
+    for trail in trails:
+        trailhead = trail[0]
+        ratings[trailhead] += 1
+    print(f'Sum of all trailhead ratings: {sum(ratings.values())}')
