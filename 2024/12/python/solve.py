@@ -1,5 +1,13 @@
 import argparse
 import dataclasses
+import enum
+
+
+class Direction(enum.Enum):
+    LEFT = 'left'
+    RIGHT = 'right'
+    UP = 'up'
+    DOWN = 'down'
 
 
 @dataclasses.dataclass
@@ -15,9 +23,12 @@ class Region:
             return self.plots[key[0]][key[1]]
         return self.plots.__getitem__(key)
 
-    @property
-    def fence_price(self) -> int:
-        return self.area * self.perimeter
+    def price_fencing(self, is_bulk : bool = False) -> int:
+        if is_bulk:
+            cost = self.area * self.side_count
+        else:
+            cost = self.area * self.perimeter
+        return cost
 
     @property
     def area(self) -> int:
@@ -37,6 +48,38 @@ class Region:
                 if neighbor not in self.plots:
                     perimeter += 1
         return perimeter
+
+    @property
+    def side_count(self) -> int:
+        count = 0
+        for plot in self.plots:
+            for side in Direction:
+                match side:
+                    case Direction.LEFT:
+                        plot_across = Plot(plot.row, plot.column - 1, plot.value)
+                        old_neighbor = Plot(plot.row - 1, plot.column, plot.value)
+                        across_old_neighbor = Plot(plot.row - 1, plot.column - 1, plot.value)
+                    case Direction.RIGHT:
+                        plot_across = Plot(plot.row, plot.column + 1, plot.value)
+                        old_neighbor = Plot(plot.row - 1, plot.column, plot.value)
+                        across_old_neighbor = Plot(plot.row - 1, plot.column + 1, plot.value)
+                    case Direction.UP:
+                        plot_across = Plot(plot.row - 1, plot.column, plot.value)
+                        old_neighbor = Plot(plot.row, plot.column - 1, plot.value)
+                        across_old_neighbor = Plot(plot.row - 1, plot.column - 1, plot.value)
+                    case Direction.DOWN:
+                        plot_across = Plot(plot.row + 1, plot.column, plot.value)
+                        old_neighbor = Plot(plot.row, plot.column - 1, plot.value)
+                        across_old_neighbor = Plot(plot.row + 1, plot.column - 1, plot.value)
+
+                is_edge = plot_across not in self.plots
+                already_counted = (
+                    old_neighbor in self.plots
+                    and across_old_neighbor not in self.plots
+                )
+                if is_edge and not already_counted:
+                    count += 1
+        return count
 
 
 @dataclasses.dataclass
@@ -121,4 +164,8 @@ if __name__ == '__main__':
     raw = _parse_file(args.filename)
     map_ = _build_map(raw)
     regions = _detect_regions(map_)
-    print(f"Total price of fencing: {sum(region.fence_price for region in regions)}")
+    price = sum(region.price_fencing() for region in regions)
+    print(f"Total price of fencing: {price}")
+
+    bulk_price = sum(region.price_fencing(is_bulk=True) for region in regions)
+    print(f"Total price of bulk fencing: {bulk_price}")
