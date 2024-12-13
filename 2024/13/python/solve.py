@@ -16,18 +16,21 @@ class ClawGame:
     prize: tuple[int, int]
 
     def solve(self) -> tuple[tuple[int, int], int]:
-        solution = None
-        solution_tokens = None
-        for a_presses in range(100, -1, -1):
-            if (
-                (b_presses := int((self.prize[0] - self.a.x_diff * a_presses) / self.b.x_diff))
-                == (self.prize[1] - self.a.y_diff * a_presses) / self.b.y_diff
-            ):
-                tokens = 3 * a_presses + b_presses
-                if not solution_tokens or solution_tokens > tokens:
-                    solution_tokens = tokens
-                    solution = a_presses, b_presses
-        return solution, solution_tokens
+        # Cramer's rule
+        determinant = self.a.x_diff * self.b.y_diff - self.a.y_diff * self.b.x_diff
+        determinant_a = self.prize[0] * self.b.y_diff - self.prize[1] * self.b.x_diff
+        determinant_b = self.a.x_diff * self.prize[1] - self.a.y_diff * self.prize[0]
+        a_presses = int(determinant_a / determinant)
+        b_presses = int(determinant_b / determinant)
+
+        if (
+            a_presses * self.a.x_diff + b_presses * self.b.x_diff == self.prize[0]
+            and a_presses * self.a.y_diff + b_presses * self.b.y_diff == self.prize[1]
+        ):
+            tokens = 3 * a_presses + b_presses
+        else:
+            a_presses = b_presses = tokens = None
+        return ((a_presses, b_presses), tokens)
 
 
 def _parse_file(filename: str) -> str:
@@ -64,3 +67,8 @@ if __name__ == '__main__':
     games = _parse_file(args.filename)
     tokens = sum(game.solve()[1] or 0 for game in games)
     print(f'Tokens necessary to win all possible prizes: {tokens}')
+
+    for game in games:
+        game.prize = (game.prize[0] + 10000000000000, game.prize[1] + 10000000000000)
+    tokens = sum(game.solve()[1] or 0 for game in games)
+    print(f'Tokens necessary to win all possible prizes (with conversion): {tokens}')
