@@ -38,6 +38,16 @@ class Map:
             robot.x = (robot.x + robot.velocity[0]) % self.width
             robot.y = (robot.y + robot.velocity[1]) % self.height
 
+    def is_tree(self):
+        pattern = (
+            f"1.{{{self.width - 1}}}"
+            f"1{{{3}}}.{{{self.width - 3}}}"
+            f"1{{{5}}}.{{{self.width - 5}}}"
+            f"1{{{7}}}.{{{self.width - 7}}}"
+            f"1{{{9}}}.{{{self.width - 9}}}"
+        )
+        return bool(re.search(pattern, str(self), re.DOTALL))
+
     def __str__(self):
         positions = [[0] * self.width for _ in range(self.height)]
         for robot in self.robots:
@@ -81,3 +91,10 @@ if __name__ == '__main__':
     for _ in range(100):
         map_.tick()
     print(f"Safety factor after 100s: {map_.safety_factor}")
+
+    map_ = _parse_file(args.filename)
+    seconds = 0
+    while not map_.is_tree():
+        map_.tick()
+        seconds += 1
+    print(f"Seconds until easter egg: {seconds}")
