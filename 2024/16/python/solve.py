@@ -7,7 +7,7 @@ import queue
 import typing
 
 
-Position: typing.TypeAlias = tuple[int, int]
+Position: typing.TypeAlias = tuple[int, int, 'Direction']
 
 
 class Direction(enum.Enum):
@@ -23,37 +23,6 @@ class Direction(enum.Enum):
     @classmethod
     def verticals(cls):
         return (cls.UP, cls.DOWN)
-
-    @classmethod
-    def turns_required(cls, direction_1, direction_2) -> int:
-        if direction_1 == direction_2:
-            return 0
-        elif (
-            set([direction_1, direction_2]) == set(cls.horizontals())
-            or set([direction_1, direction_2]) == set(cls.verticals())
-        ):
-            return 2
-        else:
-            return 1
-
-    @classmethod
-    def get(cls, previous_position, current_position):
-        diff = (
-            current_position[0] - previous_position[0],
-            current_position[1] - previous_position[1],
-        )
-        match diff:
-            case (0, 1):
-                direction = cls.RIGHT
-            case (0, -1):
-                direction = cls.LEFT
-            case (1, 0):
-                direction = cls.DOWN
-            case (-1, 0):
-                direction = cls.UP
-            case _:
-                raise ValueError("Impossible move between positions")
-        return direction
 
 
 @dataclasses.dataclass
@@ -88,6 +57,13 @@ class Map:
         except IndexError:
             return 0
 
+    def positions(self) -> typing.Iterator[Position]:
+        for row_index, row in enumerate(self.grid):
+            for column_index, position in enumerate(row):
+                if position != '#':
+                    for direction in Direction:
+                        yield row_index, column_index, direction
+
     def is_valid(self, position: Position) -> bool:
         return (
             0 <= position[0] < self.height
@@ -100,6 +76,46 @@ class Map:
         except IndexError:
             return False
 
+    def get_next_positions(self, position: Position) -> list[tuple[Position, int]]:
+        row, column, direction = position
+        match direction:
+            case Direction.LEFT:
+                possible_neighbors = (
+                    ((row, column, Direction.UP), 1000),
+                    ((row, column, Direction.DOWN), 1000),
+                    ((row, column - 1, direction), 1),
+                )
+            case Direction.RIGHT:
+                possible_neighbors = (
+                    ((row, column, Direction.UP), 1000),
+                    ((row, column, Direction.DOWN), 1000),
+                    ((row, column + 1, direction), 1),
+                )
+            case Direction.UP:
+                possible_neighbors = (
+                    ((row, column, Direction.LEFT), 1000),
+                    ((row, column, Direction.RIGHT), 1000),
+                    ((row - 1, column, direction), 1),
+                )
+            case Direction.DOWN:
+                possible_neighbors = (
+                    ((row, column, Direction.LEFT), 1000),
+                    ((row, column, Direction.RIGHT), 1000),
+                    ((row + 1, column, direction), 1),
+                )
+        return filter(
+            lambda pos: self.is_valid(pos[0]) and not self.is_obstructed(pos[0]),
+            possible_neighbors,
+        )
+
+    def render_path(self, path: list[Position]) -> str:
+        grid = [list(row) for row in self.grid]
+        for row, column, _ in path:
+            grid[row][column] = 'O'
+        return '\n'.join(
+            ''.join(row) for row in grid
+        )
+
 
 def _parse_file(filename: str) -> str:
     with open(filename, 'r') as f:
@@ -108,78 +124,59 @@ def _parse_file(filename: str) -> str:
     return raw.strip()
 
 
-def _find_path(map_: Map):
-    """Implement A* algorithm."""
-    def _estimate_points(position: Position):
-        return abs(map_.end[0] - position[0]) + abs(map_.end[1] - position[1])
+@dataclasses.dataclass(order=True)
+class PrioritizedItem:
+    priority: int
+    item: typing.Any = dataclasses.field(compare=False)
 
-    def _get_neighbors(position: Position) -> list[Position]:
-        row, column = position
-        possible_neighbors = (
-            (row - 1, column),
-            (row + 1, column),
-            (row, column - 1),
-            (row, column + 1),
-        )
-        return filter(
-            lambda pos: map_.is_valid(pos) and not map_.is_obstructed(pos),
-            possible_neighbors,
-        )
+    def __iter__(self):
+        return iter((self.priority, self.item))
 
-    def _point_step(
-        previous_position: Position,
-        current_position: Position,
-        next_position: Position,
-    ) -> int:
-        if previous_position:
-            current_direction = Direction.get(previous_position, current_position)
-        else:
-            current_direction = Direction.RIGHT
-        next_direction = Direction.get(current_position, next_position)
-        turns = Direction.turns_required(current_direction, next_direction)
-        return 1 + 1000 * turns
 
-    def _reconstruct_path(
-        came_from: dict[Position],
+def _find_all_paths(map_: Map):
+    """Dijkstra's algorithm"""
+    def _reconstruct_paths(
+        paths_to: dict[Position, list[Position]],
         current: Position,
-    ) -> list[Position]:
-        path = collections.deque([current])
-        while current := came_from.get(current):
-            path.appendleft(current)
-        return path
+    ) -> list[list[Position]]:
+        positions = set()
+        if current is not None:
+            positions.add(current)
+        for previous in paths_to[current]:
+            positions.update(_reconstruct_paths(paths_to, previous))
+        return positions
 
     path_ends = queue.PriorityQueue()
-    path_ends.put((0, map_.start))
-    came_from = {}
+    points_to = collections.defaultdict(lambda: math.inf)
+    paths_to = collections.defaultdict(set)
 
-    points = collections.defaultdict(lambda: math.inf)
-    points[map_.start] = 0
-
-    estimated_points = collections.defaultdict(lambda: math.inf)
-    estimated_points[map_.start] = _estimate_points(map_.start)
+    start_position = (*map_.start, Direction.RIGHT)
+    points_to[start_position] = 0
+    paths_to[start_position].add(None)
+    path_ends.put(PrioritizedItem(0, start_position))
+    for position in map_.positions():
+        if position != start_position:
+            path_ends.put(PrioritizedItem(math.inf, position))
 
     while not path_ends.empty():
         current_points, current_position = path_ends.get()
-        if current_position == map_.end:
-            return _reconstruct_path(came_from, current_position), current_points
+        for next_position, step_points in map_.get_next_positions(current_position):
+            next_points = points_to[current_position] + step_points
+            if next_points < points_to[next_position]:
+                paths_to[next_position] = set([current_position])
+                points_to[next_position] = next_points
+                path_ends.put(PrioritizedItem(next_points, next_position))
+            elif next_points == points_to[next_position]:
+                paths_to[next_position].add(current_position)
 
-        for next_position in _get_neighbors(current_position):
-            new_points = _point_step(
-                came_from.get(current_position),
-                current_position,
-                next_position,
-            )
-            tentative_points = points[current_position] + new_points
-            if tentative_points < points[next_position]:
-                came_from[next_position] = current_position
-                points[next_position] = tentative_points
-                estimate = tentative_points + _estimate_points(next_position)
-                estimated_points[next_position] = estimate
-
-                if next_position not in (position for _, position in path_ends.queue):
-                    path_ends.put((estimate, next_position))
-
-    return None
+    ends = [(*map_.end, direction) for direction in Direction]
+    end_points = sorted([(end, points_to[end]) for end in ends], key=lambda t: t[1])
+    min_points = end_points[0][1]
+    positions = set()
+    for end, points in end_points:
+        if points == min_points:
+            positions.update(_reconstruct_paths(paths_to, end))
+    return positions, min_points
 
 
 if __name__ == '__main__':
@@ -189,5 +186,8 @@ if __name__ == '__main__':
 
     raw_map = _parse_file(args.filename)
     map_ = Map(raw_map)
-    path, points = _find_path(map_)
+    positions, points = _find_all_paths(map_)
     print(f"Lowest possible score: {points}")
+
+    unique_coordinates = set(position[:2] for position in positions)
+    print(f"Number of tiles in path: {len(unique_coordinates)}")
