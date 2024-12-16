@@ -52,16 +52,14 @@ class Map:
         positions = [[0] * self.width for _ in range(self.height)]
         for robot in self.robots:
             positions[robot.y][robot.x] += 1
-        return '\n'.join(
-            ''.join(
-                '.' if position == 0 else str(position) for position in row
-            )
+        return "\n".join(
+            "".join("." if position == 0 else str(position) for position in row)
             for row in positions
         )
 
 
 def _parse_file(filename: str) -> Map:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         raw = f.read()
 
     return _build_map(raw.strip())
@@ -69,22 +67,22 @@ def _parse_file(filename: str) -> Map:
 
 def _build_map(raw: str) -> Map:
     robots = []
-    pattern = r'p=(?P<x>\d+),(?P<y>\d+) v=(?P<x_diff>-?\d+),(?P<y_diff>-?\d+)'
-    for raw_robot in raw.split('\n'):
+    pattern = r"p=(?P<x>\d+),(?P<y>\d+) v=(?P<x_diff>-?\d+),(?P<y_diff>-?\d+)"
+    for raw_robot in raw.split("\n"):
         if not (m := re.match(pattern, raw_robot)):
-            raise ValueError(f'Cannot parse robot format: {raw_robot}')
+            raise ValueError(f"Cannot parse robot format: {raw_robot}")
         robot = Robot(
-            x=int(m.group('x')),
-            y=int(m.group('y')),
-            velocity=(int(m.group('x_diff')), int(m.group('y_diff'))),
+            x=int(m.group("x")),
+            y=int(m.group("y")),
+            velocity=(int(m.group("x_diff")), int(m.group("y_diff"))),
         )
         robots.append(robot)
     return Map(robots=robots)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
+    parser.add_argument("filename")
     args = parser.parse_args()
 
     map_ = _parse_file(args.filename)

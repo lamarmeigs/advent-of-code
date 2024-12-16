@@ -7,18 +7,18 @@ import typing
 
 
 def _parse_file(filename: str) -> tuple[dict[str, list[str]], list[list[str]]]:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         raw = f.read()
-    raw_rules, raw_updates = raw.strip().split('\n\n')
+    raw_rules, raw_updates = raw.strip().split("\n\n")
 
     rules = collections.defaultdict(list)
     for rule in raw_rules.split():
-        preceder, follower = rule.split('|')
+        preceder, follower = rule.split("|")
         rules[preceder].append(follower)
 
     updates = []
     for update in raw_updates.split():
-        updates.append(update.split(','))
+        updates.append(update.split(","))
 
     return rules, updates
 
@@ -30,10 +30,7 @@ class Validator:
     def is_valid(self, update: list[str]) -> bool:
         for i, page in enumerate(update):
             allowed_followers = self.rules[page]
-            if not all(
-                later_page in allowed_followers
-                for later_page in update[i+1:]
-            ):
+            if not all(later_page in allowed_followers for later_page in update[i + 1 :]):
                 return False
         return True
 
@@ -79,9 +76,9 @@ def _sum_middle_pages(updates: list[list[str]]):
     return sum_
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
+    parser.add_argument("filename")
     args = parser.parse_args()
 
     rules, updates = _parse_file(args.filename)

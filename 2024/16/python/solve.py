@@ -7,14 +7,14 @@ import queue
 import typing
 
 
-Position: typing.TypeAlias = tuple[int, int, 'Direction']
+Position: typing.TypeAlias = tuple[int, int, "Direction"]
 
 
 class Direction(enum.Enum):
-    LEFT = 'left'
-    RIGHT = 'right'
-    UP = 'up'
-    DOWN = 'down'
+    LEFT = "left"
+    RIGHT = "right"
+    UP = "up"
+    DOWN = "down"
 
     @classmethod
     def horizontals(cls):
@@ -33,18 +33,16 @@ class Map:
 
     def __init__(self, raw_map: str):
         self.grid = []
-        for row_index, raw_row in enumerate(raw_map.split('\n')):
+        for row_index, raw_row in enumerate(raw_map.split("\n")):
             row = list(raw_row)
-            if 'E' in row:
-                self.end = (row_index, row.index('E'))
-            elif 'S' in row:
-                self.start = (row_index, row.index('S'))
+            if "E" in row:
+                self.end = (row_index, row.index("E"))
+            elif "S" in row:
+                self.start = (row_index, row.index("S"))
             self.grid.append(row)
 
     def __str__(self):
-        return '\n'.join(
-            ''.join(row) for row in self.grid
-        )
+        return "\n".join("".join(row) for row in self.grid)
 
     @property
     def height(self):
@@ -60,19 +58,16 @@ class Map:
     def positions(self) -> typing.Iterator[Position]:
         for row_index, row in enumerate(self.grid):
             for column_index, position in enumerate(row):
-                if position != '#':
+                if position != "#":
                     for direction in Direction:
                         yield row_index, column_index, direction
 
     def is_valid(self, position: Position) -> bool:
-        return (
-            0 <= position[0] < self.height
-            and 0 <= position[1] < self.width
-        )
+        return 0 <= position[0] < self.height and 0 <= position[1] < self.width
 
     def is_obstructed(self, position: Position) -> bool:
         try:
-            return self.grid[position[0]][position[1]] == '#'
+            return self.grid[position[0]][position[1]] == "#"
         except IndexError:
             return False
 
@@ -111,14 +106,12 @@ class Map:
     def render_path(self, path: list[Position]) -> str:
         grid = [list(row) for row in self.grid]
         for row, column, _ in path:
-            grid[row][column] = 'O'
-        return '\n'.join(
-            ''.join(row) for row in grid
-        )
+            grid[row][column] = "O"
+        return "\n".join("".join(row) for row in grid)
 
 
 def _parse_file(filename: str) -> str:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         raw = f.read()
 
     return raw.strip()
@@ -135,6 +128,7 @@ class PrioritizedItem:
 
 def _find_all_paths(map_: Map):
     """Dijkstra's algorithm"""
+
     def _reconstruct_paths(
         paths_to: dict[Position, list[Position]],
         current: Position,
@@ -179,9 +173,9 @@ def _find_all_paths(map_: Map):
     return positions, min_points
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
+    parser.add_argument("filename")
     args = parser.parse_args()
 
     raw_map = _parse_file(args.filename)

@@ -34,7 +34,7 @@ class ClawGame:
 
 
 def _parse_file(filename: str) -> str:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         raw = f.read()
 
     return _build_games(raw)
@@ -43,32 +43,32 @@ def _parse_file(filename: str) -> str:
 def _build_games(raw: str) -> list[ClawGame]:
     games = []
     pattern = (
-        r'Button A: X\+(?P<a_x>\d+), Y\+(?P<a_y>\d+)\n'
-        r'Button B: X\+(?P<b_x>\d+), Y\+(?P<b_y>\d+)\n'
-        r'Prize: X=(?P<prize_x>\d+), Y=(?P<prize_y>\d+)'
+        r"Button A: X\+(?P<a_x>\d+), Y\+(?P<a_y>\d+)\n"
+        r"Button B: X\+(?P<b_x>\d+), Y\+(?P<b_y>\d+)\n"
+        r"Prize: X=(?P<prize_x>\d+), Y=(?P<prize_y>\d+)"
     )
-    for raw_game in raw.split('\n\n'):
+    for raw_game in raw.split("\n\n"):
         if not (m := re.match(pattern, raw_game)):
-            raise ValueError('Cannot parse game format')
+            raise ValueError("Cannot parse game format")
         game = ClawGame(
-            a=Button(int(m.group('a_x')), int(m.group('a_y'))),
-            b=Button(int(m.group('b_x')), int(m.group('b_y'))),
-            prize=(int(m.group('prize_x')), int(m.group('prize_y'))),
+            a=Button(int(m.group("a_x")), int(m.group("a_y"))),
+            b=Button(int(m.group("b_x")), int(m.group("b_y"))),
+            prize=(int(m.group("prize_x")), int(m.group("prize_y"))),
         )
         games.append(game)
     return games
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
+    parser.add_argument("filename")
     args = parser.parse_args()
 
     games = _parse_file(args.filename)
     tokens = sum(game.solve()[1] or 0 for game in games)
-    print(f'Tokens necessary to win all possible prizes: {tokens}')
+    print(f"Tokens necessary to win all possible prizes: {tokens}")
 
     for game in games:
         game.prize = (game.prize[0] + 10000000000000, game.prize[1] + 10000000000000)
     tokens = sum(game.solve()[1] or 0 for game in games)
-    print(f'Tokens necessary to win all possible prizes (with conversion): {tokens}')
+    print(f"Tokens necessary to win all possible prizes (with conversion): {tokens}")

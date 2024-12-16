@@ -3,7 +3,7 @@ import collections
 
 
 def _parse_file(filename: str) -> tuple[list[int], list[int]]:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         lines = f.readlines()
 
     locations_1 = []
@@ -26,14 +26,14 @@ def _calculate_similarity(locations_1: list[int], locations_2: list[int]) -> int
     return sum(l1 * counter[l1] for l1 in locations_1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
+    parser.add_argument("filename")
     args = parser.parse_args()
 
     locations_1, locations_2 = _parse_file(args.filename)
     distance = _calculate_distance(locations_1, locations_2)
-    print(f'Total distance: {distance}')
+    print(f"Total distance: {distance}")
 
     similarity = _calculate_similarity(locations_1, locations_2)
-    print(f'Total similarity: {similarity}')
+    print(f"Total similarity: {similarity}")

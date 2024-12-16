@@ -4,12 +4,12 @@ import typing
 
 
 def _parse_file(filename: str) -> dict[int, list[str]]:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         raw_lines = f.readlines()
 
     equations = {}
     for line in raw_lines:
-        test_value, operands = line.split(':')
+        test_value, operands = line.split(":")
         equations[int(test_value.strip())] = [val.strip() for val in operands.split()]
     return equations
 
@@ -60,27 +60,25 @@ def _evaluates(equation: list[str], result: int) -> bool:
     total = int(equation[0])
     for operator, operand in itertools.batched(equation[1:], 2):
         match operator:
-            case '+':
+            case "+":
                 total += int(operand)
-            case '*':
+            case "*":
                 total *= int(operand)
-            case '||':
+            case "||":
                 total = int(str(total) + operand)
     return total == result
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
+    parser.add_argument("filename")
     args = parser.parse_args()
 
     equations = _parse_file(args.filename)
-    valid_equations = _validate_equations(equations, operators=('+', '*'))
-    print(
-        f'Sum of test values with valid equations (using +, *): {sum(valid_equations.keys())}'
-    )
+    valid_equations = _validate_equations(equations, operators=("+", "*"))
+    print(f"Sum of test values with valid equations (using +, *): {sum(valid_equations.keys())}")
 
-    valid_equations = _validate_equations(equations, operators=('+', '*', '||'))
+    valid_equations = _validate_equations(equations, operators=("+", "*", "||"))
     print(
-        f'Sum of test values with valid equations (using +, *, ||): {sum(valid_equations.keys())}'
+        f"Sum of test values with valid equations (using +, *, ||): {sum(valid_equations.keys())}"
     )

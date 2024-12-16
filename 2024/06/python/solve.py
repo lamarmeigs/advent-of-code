@@ -4,14 +4,14 @@ import dataclasses
 import enum
 
 
-class LoopError(Exception):
-    ...
+class LoopError(Exception): ...
+
 
 class Direction(enum.Enum):
-    LEFT = 'left'
-    RIGHT = 'right'
-    UP = 'up'
-    DOWN = 'down'
+    LEFT = "left"
+    RIGHT = "right"
+    UP = "up"
+    DOWN = "down"
 
     @classmethod
     def horizontals(cls):
@@ -35,21 +35,20 @@ class Position:
         return bool(self.visited_directions)
 
     def __str__(self):
-        if (
-            self.visited_directions.intersection(Direction.verticals())
-            and self.visited_directions.intersection(Direction.horizontals())
-        ):
-            c = '+'
+        if self.visited_directions.intersection(
+            Direction.verticals()
+        ) and self.visited_directions.intersection(Direction.horizontals()):
+            c = "+"
         elif self.visited_directions.intersection(Direction.verticals()):
-            c = '|'
+            c = "|"
         elif self.visited_directions.intersection(Direction.horizontals()):
-            c = '-'
+            c = "-"
         elif self.obstructed and self.test:
-            c = 'O'
+            c = "O"
         elif self.obstructed:
-            c = '#'
+            c = "#"
         else:
-            c = '.'
+            c = "."
         return c
 
 
@@ -62,13 +61,13 @@ class Guard:
     def __str__(self):
         match self.facing:
             case Direction.UP:
-                c = '^'
+                c = "^"
             case Direction.RIGHT:
-                c = '>'
+                c = ">"
             case Direction.DOWN:
-                c = 'v'
+                c = "v"
             case Direction.LEFT:
-                c = '<'
+                c = "<"
         return c
 
     def turn_right(self):
@@ -97,15 +96,15 @@ class Map:
         for row_index, raw_row in enumerate(raw_grid.split()):
             row = []
             for column_index, raw_position in enumerate(raw_row):
-                if is_guard := (raw_position.lower() in ('^', '>', '<', 'v')):
+                if is_guard := (raw_position.lower() in ("^", ">", "<", "v")):
                     match raw_position:
-                        case '^':
+                        case "^":
                             direction = Direction.UP
-                        case '>':
+                        case ">":
                             direction = Direction.RIGHT
-                        case 'v':
+                        case "v":
                             direction = Direction.DOWN
-                        case '<':
+                        case "<":
                             direction = Direction.LEFT
                     self.guard = Guard(
                         row=row_index,
@@ -116,7 +115,7 @@ class Map:
                     row=row_index,
                     column=column_index,
                     visited_directions={self.guard.facing} if is_guard else set(),
-                    obstructed=raw_position == '#'
+                    obstructed=raw_position == "#",
                 )
                 row.append(position)
             self.grid.append(row)
@@ -133,7 +132,7 @@ class Map:
         if self.guard:
             rendered_rows[self.guard.row][self.guard.column] = str(self.guard)
 
-        return '\n'.join(''.join(row) for row in rendered_rows)
+        return "\n".join("".join(row) for row in rendered_rows)
 
     def play(self):
         while self.step():
@@ -189,15 +188,15 @@ class Map:
 
 
 def _parse_file(filename: str) -> str:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         raw_grid = f.read()
     return raw_grid
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument("filename")
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     raw_map = _parse_file(args.filename)
@@ -205,14 +204,9 @@ if __name__ == '__main__':
     map_.play()
 
     visited_positions = len(
-        [
-            position
-            for row in map_.grid
-            for position in row
-            if position.visited
-        ]
+        [position for row in map_.grid for position in row if position.visited]
     )
-    print(f'Number of visited positions: {visited_positions}')
+    print(f"Number of visited positions: {visited_positions}")
 
     map_.reset(raw_map)
     obstructions_causing_loops = []
@@ -236,4 +230,4 @@ if __name__ == '__main__':
         changed = map_.step()
         step += 1
 
-    print(f'Number of potential loop-causing obstructions: {len(obstructions_causing_loops)}')
+    print(f"Number of potential loop-causing obstructions: {len(obstructions_causing_loops)}")

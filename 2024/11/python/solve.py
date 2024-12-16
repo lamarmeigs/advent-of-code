@@ -4,8 +4,9 @@ import collections
 
 known_blinks = collections.defaultdict(dict)
 
+
 def _parse_file(filename: str) -> list[int]:
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         raw = f.read()
     return [int(d) for d in raw.strip().split()]
 
@@ -38,18 +39,18 @@ def _blink(stone: int, count: int) -> list[int]:
         return length
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
+    parser.add_argument("filename")
     args = parser.parse_args()
 
     stones = _parse_file(args.filename)
     stone_count = 0
     for stone in stones:
         stone_count += _blink(stone, 25)
-    print(f'Number of stones after 25 blinks: {stone_count}')
+    print(f"Number of stones after 25 blinks: {stone_count}")
 
     stone_count = 0
     for stone in stones:
         stone_count += _blink(stone, 75)
-    print(f'Number of stones after 75 blinks: {stone_count}')
+    print(f"Number of stones after 75 blinks: {stone_count}")
