@@ -3,8 +3,12 @@ import dataclasses
 import re
 
 
-class Halt(Exception): ...
-class InvalidProgram(Exception): ...
+class Halt(Exception):
+    pass
+
+
+class InvalidProgram(Exception):
+    pass
 
 
 @dataclasses.dataclass
@@ -145,9 +149,24 @@ def _build_computer(raw_computer: str) -> Computer:
         register_a=int(match.group("reg_a")),
         register_b=int(match.group("reg_b")),
         register_c=int(match.group("reg_c")),
-        program=[int(inst) for inst in match.group("program").split(",")]
+        program=[int(inst) for inst in match.group("program").split(",")],
     )
     return computer
+
+
+def _find_a(computer: Computer, instruction_index: int, guess: int = 0):
+    if instruction_index < 0:
+        return guess
+
+    for d in range(8):
+        register_a = guess << 3 | d
+        test_computer = Computer(register_a=register_a, program=computer.program)
+        test_computer.run()
+        if test_computer._output == test_computer.program[instruction_index:]:
+            if solution := _find_a(computer, instruction_index - 1, register_a):
+                return solution
+
+    return None
 
 
 if __name__ == "__main__":
@@ -158,3 +177,6 @@ if __name__ == "__main__":
     computer = _parse_file(args.filename)
     computer.run()
     print(f"Expected output: {computer.output}")
+
+    register_a = _find_a(computer, len(computer.program) - 1)
+    print(f"Uncorrupted register A: {register_a}")
