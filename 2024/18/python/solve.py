@@ -29,9 +29,14 @@ class Map:
     def end(self):
         return (self.width - 1, self.height - 1)
 
-    def tick(self):
-        column, row = self.falls.pop(0)
+    def tick(self) -> Position:
+        try:
+            column, row = self.falls.pop(0)
+        except IndexError:
+            return None
+
         self.grid[row][column] = '#'
+        return (column, row)
 
     def _is_valid(self, position: Position) -> bool:
         return 0 <= position[0] < self.height and 0 <= position[1] < self.width
@@ -130,3 +135,7 @@ if __name__ == "__main__":
         map_.tick()
     path = _find_path(map_)
     print(f"Steps in path: {len(path) - 1}")
+
+    while _find_path(map_) is not None:
+        fall = map_.tick()
+    print(f"Coordinates of fall preventing escape: {fall}")
