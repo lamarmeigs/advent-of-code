@@ -65,20 +65,6 @@ class Map:
             possible_neighbors,
         )
 
-    def get_cheat_ends(self, position: Position) -> list[Position]:
-        row, column = position
-        ends = []
-        if self._is_wall((row, column - 1)) and not self._is_wall((row, column - 2)):
-            ends.append((row, column - 2))
-        if self._is_wall((row, column + 1)) and not self._is_wall((row, column + 2)):
-            ends.append((row, column + 2))
-        if self._is_wall((row - 1, column)) and not self._is_wall((row - 2, column)):
-            ends.append((row - 2, column))
-        if self._is_wall((row + 1, column)) and not self._is_wall((row + 2, column)):
-            ends.append((row + 2, column))
-
-        return filter(self._is_valid, ends)
-
 
 def _parse_file(filename: str) -> Map:
     with open(filename, "r") as f:
@@ -99,13 +85,21 @@ def _find_path(map_: Map) -> list[Position]:
 def _get_cheats(
     map_: Map,
     path: list[Position],
+    max_distance: int,
 ) -> dict[int, list[tuple[Position, Position]]]:
-    cheats = collections.defaultdict(list)
+    cheats = collections.defaultdict(set)
     for i, start in enumerate(path):
-        for end in map_.get_cheat_ends(start):
-            if (skipped := path.index(end) - i - 2) > 0:
-                cheats[skipped].append((start, end))
+        for j in range(i, len(path)):
+            end = path[j]
+            old_distance = j - i
+            new_distance = _get_manhattan_distance(start, end)
+            if new_distance <= max_distance and new_distance < old_distance:
+                cheats[old_distance - new_distance].add((start, end))
     return cheats
+
+
+def _get_manhattan_distance(position_1: Position, position_2: Position) -> int:
+    return abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1])
 
 
 if __name__ == "__main__":
@@ -115,6 +109,10 @@ if __name__ == "__main__":
 
     map_ = _parse_file(args.filename)
     path = _find_path(map_)
-    cheats = _get_cheats(map_, path)
+    cheats = _get_cheats(map_, path, 2)
     big_cheats = itertools.chain(*[c for skipped, c in cheats.items() if skipped >= 100])
-    print(f"Number of cheats skipping 100+ steps: {len(list(big_cheats))}")
+    print(f"Number of 2-step cheats skipping 100+ steps: {len(list(big_cheats))}")
+
+    cheats = _get_cheats(map_, path, 20)
+    big_cheats = itertools.chain(*[c for skipped, c in cheats.items() if skipped >= 100])
+    print(f"Number of 20-step cheats skipping 100+ steps: {len(list(big_cheats))}")
