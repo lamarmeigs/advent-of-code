@@ -1,0 +1,120 @@
+import argparse
+import collections
+import dataclasses
+import itertools
+import typing
+
+Position: typing.TypeAlias = tuple[int, int]
+
+
+@dataclasses.dataclass
+class Map:
+    start: Position
+    end: Position
+    grid: list[list[str]] = dataclasses.field(default_factory=list)
+
+    @classmethod
+    def from_raw(cls, raw_map: str) -> 'Map':
+        start = None
+        end = None
+        grid = []
+        for row_index, raw_row in enumerate(raw_map.split('\n')):
+            row = []
+            for column_index, position in enumerate(raw_row):
+                row.append(position)
+                if position == 'S':
+                    start = (row_index, column_index)
+                elif position == 'E':
+                    end = (row_index, column_index)
+            grid.append(row)
+        return cls(start, end, grid)
+
+    def __str__(self):
+        return "\n".join("".join(row) for row in self.grid)
+
+    @property
+    def width(self) -> int:
+        try:
+            return len(self.grid[0])
+        except IndexError:
+            return 0
+
+    @property
+    def height(self):
+        return len(self.grid)
+
+    def _is_valid(self, position: Position) -> bool:
+        return 0 <= position[0] < self.height and 0 <= position[1] < self.width
+
+    def _is_wall(self, position: Position) -> bool:
+        try:
+            return self.grid[position[0]][position[1]] == "#"
+        except IndexError:
+            return False
+
+    def get_neighbors(self, position: Position) -> list[Position]:
+        row, column = position
+        possible_neighbors = (
+            (row, column - 1),
+            (row, column + 1),
+            (row - 1, column),
+            (row + 1, column),
+        )
+        return filter(
+            lambda pos: self._is_valid(pos) and not self._is_wall(pos),
+            possible_neighbors,
+        )
+
+    def get_cheat_ends(self, position: Position) -> list[Position]:
+        row, column = position
+        ends = []
+        if self._is_wall((row, column - 1)) and not self._is_wall((row, column - 2)):
+            ends.append((row, column - 2))
+        if self._is_wall((row, column + 1)) and not self._is_wall((row, column + 2)):
+            ends.append((row, column + 2))
+        if self._is_wall((row - 1, column)) and not self._is_wall((row - 2, column)):
+            ends.append((row - 2, column))
+        if self._is_wall((row + 1, column)) and not self._is_wall((row + 2, column)):
+            ends.append((row + 2, column))
+
+        return filter(self._is_valid, ends)
+
+
+def _parse_file(filename: str) -> Map:
+    with open(filename, "r") as f:
+        raw = f.read()
+
+    return Map.from_raw(raw.strip())
+
+
+def _find_path(map_: Map) -> list[Position]:
+    path = [map_.start]
+    while path[-1] != map_.end:
+        for neighbor in map_.get_neighbors(path[-1]):
+            if neighbor not in path:
+                path.append(neighbor)
+    return path
+
+
+def _get_cheats(
+    map_: Map,
+    path: list[Position],
+) -> dict[int, list[tuple[Position, Position]]]:
+    cheats = collections.defaultdict(list)
+    for i, start in enumerate(path):
+        for end in map_.get_cheat_ends(start):
+            if (skipped := path.index(end) - i - 2) > 0:
+                cheats[skipped].append((start, end))
+    return cheats
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename")
+    args = parser.parse_args()
+
+    map_ = _parse_file(args.filename)
+    path = _find_path(map_)
+    cheats = _get_cheats(map_, path)
+    big_cheats = itertools.chain(*[c for skipped, c in cheats.items() if skipped >= 100])
+    print(f"Number of cheats skipping 100+ steps: {len(list(big_cheats))}")
