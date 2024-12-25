@@ -12,7 +12,7 @@ class Wire:
 
 @dataclasses.dataclass
 class Gate:
-    operand: typing.Literal["AND", "OR", "XOR"]
+    operator: typing.Literal["AND", "OR", "XOR"]
     input1: str
     input2: str
     output: str
@@ -60,7 +60,7 @@ def _run_circuit(wires: dict[str, Wire]):
         if (input2 := wires[gate.input2]).value is None:
             _evaluate_wire(input2)
 
-        match gate.operand:
+        match gate.operator:
             case 'AND':
                 result = input1.value & input2.value
             case 'OR':
@@ -74,6 +74,49 @@ def _run_circuit(wires: dict[str, Wire]):
         _evaluate_wire(wire)
 
 
+def _extract_labelled(wires: dict[str, Wire], label: str) -> str:
+    labelled_wires = sorted((key for key in wires if key.startswith(label)), reverse=True)
+    return ''.join(str(wires[key].value) for key in labelled_wires)
+
+
+def _find_incorrect_wires(wires: dict[str, Wire]):
+    gates = {}
+    for wire_id, wire in wires.items():
+        if gate := wire.source:
+            gates[wire_id] = (gate.input1, gate.operator, gate.input2)
+
+    problem_wires = set()
+    for output, (input1, operator, input2) in gates.items():
+        if output.startswith("z") and not output.endswith(("z00", "z45")) and operator != "XOR":
+            problem_wires.add(output)
+
+        elif (
+            operator == "XOR"
+            and not input1.startswith(("x", "y", "z"))
+            and not input2.startswith(("x", "y", "z"))
+            and not output.startswith(("x", "y", "z"))
+        ):
+            problem_wires.add(output)
+
+        elif (
+            operator == "AND"
+            and "x00" not in (input1, input2)
+            and any(
+                output in (sub_input1, sub_input2) and sub_operator != "OR"
+                for sub_input1, sub_operator, sub_input2 in gates.values()
+            )
+        ):
+            problem_wires.add(output)
+
+        elif operator == "XOR" and any(
+            output in (sub_input1, sub_input2) and sub_operator == "OR"
+            for sub_input1, sub_operator, sub_input2 in gates.values()
+        ):
+            problem_wires.add(output)
+
+    return problem_wires
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("filename")
@@ -81,8 +124,8 @@ if __name__ == "__main__":
 
     wires = _parse_file(args.filename)
     _run_circuit(wires)
-    z_wire_values = [
-        wires[key].value for key in sorted(key for key in wires if key.startswith("z"))
-    ]
-    circuit_output = int(''.join(str(d) for d in z_wire_values[::-1]), 2)
-    print(f"Circuit output: {circuit_output}")
+    circuit_output = _extract_labelled(wires, "z")
+    print(f"Circuit output: {int(circuit_output, 2)}")
+
+    bad_wires = _find_incorrect_wires(wires)
+    print(f"Swapped output wires: {','.join(sorted(list(bad_wires)))}")
