@@ -7,11 +7,11 @@ def _parse_file(filename: str) -> list[str]:
     return [row.strip("\n") for row in rows]
 
 
-def _count_moveable_rolls(rows: list[str]) -> int:
+def _get_moveable_rolls(rows: list[str]) -> int:
     def _is_roll(x: int, y: int) -> bool:
         if x < 0 or y < 0 or x >= len(rows[0]) or y >= len(rows):
             return False
-        return rows[y][x] == '@' or rows[y][x] == 'x'
+        return rows[y][x] == '@'
 
     def _count_neighbors(x: int, y: int) -> int:
         neighbors = 0
@@ -23,12 +23,18 @@ def _count_moveable_rolls(rows: list[str]) -> int:
                     neighbors += 1
         return neighbors
 
-    count = 0
+    moveable = []
     for y, row in enumerate(rows):
         for x, position in enumerate(row):
             if _is_roll(x, y) and _count_neighbors(x, y) < 4:
-                count += 1
-    return count
+                moveable.append((x, y))
+    return moveable
+
+
+def _remove_rolls(moveable_rolls: list[tuple[int, int]], rows: list[str]):
+    for x, y in moveable_rolls:
+        rows[y] = rows[y][:x] + '.' + rows[y][x + 1 :]
+    return len(moveable_rolls)
 
 
 if __name__ == "__main__":
@@ -37,5 +43,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     rows = _parse_file(args.filename)
-    moveable_rolls = _count_moveable_rolls(rows)
-    print(f"moveable rolls: {moveable_rolls}")
+    moveable_rolls = _get_moveable_rolls(rows)
+    print(f"Moveable rolls: {len(moveable_rolls)}")
+
+    total_removed = 0
+    while moveable_rolls:
+        total_removed += _remove_rolls(moveable_rolls, rows)
+        moveable_rolls = _get_moveable_rolls(rows)
+    print(f"Total removeable rolls: {total_removed}")
