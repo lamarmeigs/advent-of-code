@@ -34,8 +34,42 @@ Of course, the actual worksheet is *much* wider. You'll need to make sure to unr
 
 Solve the problems on the math worksheet. *What is the grand total found by adding together all of the answers to the individual problems?*
 
-To begin, [get your puzzle input](6/input).
+Your puzzle answer was `6371789547734`.
 
-Answer:
+\--- Part Two ---
+----------
 
-You can also [Shareon [Bluesky](https://bsky.app/intent/compose?text=%22Trash+Compactor%22+%2D+Day+6+%2D+Advent+of+Code+2025+%23AdventOfCode+https%3A%2F%2Fadventofcode%2Ecom%2F2025%2Fday%2F6) [Twitter](https://twitter.com/intent/tweet?text=%22Trash+Compactor%22+%2D+Day+6+%2D+Advent+of+Code+2025&url=https%3A%2F%2Fadventofcode%2Ecom%2F2025%2Fday%2F6&related=ericwastl&hashtags=AdventOfCode) [Mastodon](javascript:void(0);)] this puzzle.
+The big cephalopods come back to check on how things are going. When they see that your grand total doesn't match the one expected by the worksheet, they realize they forgot to explain how to read cephalopod math.
+
+Cephalopod math is written *right-to-left in columns*. Each number is given in its own column, with the most significant digit at the top and the least significant digit at the bottom. (Problems are still separated with a column consisting only of spaces, and the symbol at the bottom of the problem is still the operator to use.)
+
+Here's the example worksheet again:
+
+```
+123 328  51 64
+ 45 64  387 23
+  6 98  215 314
+*   +   *   +  
+
+```
+
+Reading the problems right-to-left one column at a time, the problems are now quite different:
+
+* The rightmost problem is `4` + `431` + `623` = `*1058*`
+* The second problem from the right is `175` \* `581` \* `32` = `*3253600*`
+* The third problem from the right is `8` + `248` + `369` = `*625*`
+* Finally, the leftmost problem is `356` \* `24` \* `1` = `*8544*`
+
+Now, the grand total is `1058` + `3253600` + `625` + `8544` = `*3263827*`.
+
+Solve the problems on the math worksheet again. *What is the grand total found by adding together all of the answers to the individual problems?*
+
+Your puzzle answer was `11419862653216`.
+
+Both parts of this puzzle are complete! They provide two gold stars: \*\*
+
+At this point, you should [return to your Advent calendar](/2025) and try another puzzle.
+
+If you still want to see it, you can [get your puzzle input](6/input).
+
+You can also [Shareon [Bluesky](https://bsky.app/intent/compose?text=I%27ve+completed+%22Trash+Compactor%22+%2D+Day+6+%2D+Advent+of+Code+2025+%23AdventOfCode+https%3A%2F%2Fadventofcode%2Ecom%2F2025%2Fday%2F6) [Twitter](https://twitter.com/intent/tweet?text=I%27ve+completed+%22Trash+Compactor%22+%2D+Day+6+%2D+Advent+of+Code+2025&url=https%3A%2F%2Fadventofcode%2Ecom%2F2025%2Fday%2F6&related=ericwastl&hashtags=AdventOfCode) [Mastodon](javascript:void(0);)] this puzzle.
