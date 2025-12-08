@@ -25,7 +25,7 @@ def _get_distance(box_1: JunctionBox, box_2: JunctionBox) -> float:
     )
 
 
-def _join_circuits(
+def _join_n_circuits(
     distances: dict[float, tuple[JunctionBox, JunctionBox]],
     count: int,
 ) -> list[set[JunctionBox]]:
@@ -58,6 +58,42 @@ def _join_circuits(
     return circuits
 
 
+def _join_all_boxes(
+    distances: dict[float, tuple[JunctionBox, JunctionBox]],
+    box_count: int,
+) -> list[set[JunctionBox]]:
+    def _find_circuit(box: JunctionBox, circuits: list[set[JunctionBox]]) -> set[JunctionBox]:
+        for circuit in circuits:
+            if box in circuit:
+                return circuit
+        return None
+
+    circuits = []
+    nearest_distances = sorted(distances.keys())
+    for distance in nearest_distances:
+        box_1, box_2 = distances[distance]
+
+        box_1_circuit = _find_circuit(box_1, circuits)
+        box_2_circuit = _find_circuit(box_2, circuits)
+
+        if not box_1_circuit and not box_2_circuit:
+            circuits.append(set([box_1, box_2]))
+        elif box_1_circuit and not box_2_circuit:
+            box_1_circuit.add(box_2)
+        elif not box_1_circuit and box_2_circuit:
+            box_2_circuit.add(box_1)
+        else:
+            if box_1_circuit == box_2_circuit:
+                continue
+            box_1_circuit |= box_2_circuit
+            circuits.remove(box_2_circuit)
+
+        if len(circuits) == 1 and len(circuits[0]) == box_count:
+            break
+
+    return box_1, box_2
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("filename")
@@ -67,7 +103,10 @@ if __name__ == "__main__":
     pairs = itertools.permutations(junction_boxes, 2)
     distances = {_get_distance(*pair): pair for pair in pairs}
 
-    circuits = _join_circuits(distances, 1000)
+    circuits = _join_n_circuits(distances, 1000)
     circuits.sort(key=len, reverse=True)
     result = len(circuits[0]) * len(circuits[1]) * len(circuits[2])
     print(f"Product of 3 largest circuits: {result}")
+
+    box_1, box_2 = _join_all_boxes(distances, len(junction_boxes))
+    print(f"Product of final connected boxes: {box_1.x * box_2.x}")
